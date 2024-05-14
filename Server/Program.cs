@@ -6,7 +6,6 @@ using Server.Data;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-NpgsqlConnection.GlobalTypeMapper.EnableDynamicJson();
 builder.Services.AddControllers();
 builder.Services.AddRazorPages();
 
@@ -20,14 +19,11 @@ ConnectionString = builder.Configuration.GetConnectionString("Local")!;
 
 builder.Services.AddDbContext<AppDbContext>(options =>
 {
-    options.UseCosmos(ConnectionString, "JrH8pFfephFy7qZMbOCdAGY7L7oWabz2o8UL2BlDe3Fanr0ROT9vFmhVGo8FF62jb89qPRkzPRFrACDbXGOkfg==", "MyTask");
+    options.UseCosmos(ConnectionString, "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==", "MyTask");
 });
 
-AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
-//builder.Services.AddDbContext<AppDbContext>(options => options.UseNpgsql(ConnectionString, o => o.SetPostgresVersion(12, 18)).EnableDetailedErrors(true)); ;
 
 var app = builder.Build();
-
 // Configure the HTTP request pipeline.
 SeedData.EnsureSeeded(app.Services);
 
