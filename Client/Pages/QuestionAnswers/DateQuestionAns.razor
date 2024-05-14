@@ -1,0 +1,7 @@
+﻿<MudText Color="Color.Inherit" Typo="Typo.h6">@Data!.Title</MudText>
+<MudDatePicker PickerVariant="PickerVariant.Dialog" ReadOnly="IsReadOnly" DateFormat="dd/MM/yyyy" Label="Select Date"  @bind-Date="Data!.Date" For="() => Data!.Date"/>
+
+@code {
+    [Parameter] public DateQuestionAnswer Data { get; set; } = new();
+    [Parameter] public bool IsReadOnly { get; set; } = false;
+}

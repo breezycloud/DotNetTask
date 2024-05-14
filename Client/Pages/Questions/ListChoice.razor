@@ -1,0 +1,27 @@
+﻿@foreach (var choice in Choices)
+{
+    <MudStack AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">    
+        <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceEvenly">
+             <MudIconButton Icon="@Icons.Material.Rounded.Delete" Size="Size.Small" Color="Color.Error" OnClick="() => Delete(choice)" />
+             <MudTextField T="string" Value="choice" ValueChanged="(t) => Edit(t)" Variant="Variant.Outlined" Label="Choice" />
+         </MudStack>
+     </MudStack>
+}
+
+
+@code {
+    [Parameter] public List<string> Choices { get; set; } = new();
+
+
+    void Delete(string choice)
+    {
+        Choices.Remove(choice);
+        AppState.UpdateChoices(Choices);
+    }
+
+    void Edit(string text)
+    {
+        AppState.UpdateChoice(text);
+        StateHasChanged();
+    }
+}

@@ -1,0 +1,14 @@
+﻿<MudText Color="Color.Inherit" Typo="Typo.h6">@Data!.Title</MudText>
+<MudSelect Strict T="string" @bind-Value="Data!.Option" ReadOnly="IsReadOnly" AnchorOrigin="Origin.BottomCenter" Dense Variant="Variant.Outlined">
+     @foreach (string item in Data!.Choices)
+    {
+        <MudSelectItem Value="@item">@item</MudSelectItem>
+    }
+</MudSelect>
+<MudTextField @bind-Value="Data.Other" ReadOnly Variant="Variant.Outlined"
+                Required Placeholder="Please specify other here" />
+
+@code {
+    [Parameter] public DropdownQuestionAnswer Data { get; set; } = new();  
+    [Parameter] public bool IsReadOnly { get; set; } = false;
+}

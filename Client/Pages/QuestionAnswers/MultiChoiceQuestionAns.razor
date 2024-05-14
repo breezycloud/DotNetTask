@@ -1,0 +1,44 @@
+﻿<MudText Color="Color.Inherit" Typo="Typo.h6">@Data!.Title</MudText>
+<MudSelect @ref="PkOptions" T="string" Strict MultiSelection Label="Options"
+            HelperText="@(Options.Count() > 0 ? string.Join(",", Options) : "")"
+            ReadOnly="IsReadOnly" SelectedValues="Options" SelectedValuesChanged="ValidateSelection" 
+            AnchorOrigin="Origin.BottomCenter" Dense Variant="Variant.Outlined">
+     @foreach (string item in Data!.Choices!)
+    {
+        <MudSelectItem Value="@item">@item</MudSelectItem>
+    }
+</MudSelect>
+
+@code {
+    MudSelect<string>? PkOptions = new();
+    [Parameter] public MultichoiceQuestionAnswer Data { get; set; } = new();
+    [Parameter] public bool IsReadOnly { get; set; } = false;
+    IEnumerable<string> Options = new HashSet<string>();    
+    protected override void OnParametersSet()
+    {
+        Options = Data!.Options! is null ? new HashSet<string>() : Data!.Options;
+        Console.WriteLine("Max: {0}", Data!.Max);
+        base.OnParametersSet();
+    }
+
+    private string GetMultiSelectionText(List<string> selectedValues)
+    {
+        return $"{selectedValues.Count} option{(selectedValues.Count > 1 ? "s have" : " has")} been selected";
+    }
+
+    async void ValidateSelection(IEnumerable<string> values)
+    {
+        if(values.Count() > Data!.Max)
+        {
+            SnackBar.Add("you cannot select more than required options", Severity.Warning);
+            foreach (var item in values)
+                await PkOptions!.SelectOption(item);
+
+            Options = [];
+            Data!.Options!.Clear();
+        }
+        Options = values;
+        Data!.Options = Options.ToList();
+        StateHasChanged();
+    }
+}

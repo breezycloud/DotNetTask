@@ -1,0 +1,15 @@
+﻿<MudHidden Breakpoint="Breakpoint.MdAndUp">
+    <MudIconButton OnClick="DrawerToggleCallback" Icon="@Icons.Material.Rounded.Notes" Color="Color.Inherit" Edge="Edge.Start"/>
+    <MudSpacer/>
+    <NavLink ActiveClass="d-flex" href="/">
+        <AppIcon/>
+    </NavLink>    
+</MudHidden>
+<MudHidden Breakpoint="Breakpoint.MdAndUp" Invert="true">
+    <NavLink ActiveClass="d-flex me-4" href="/">
+        <AppIcon />
+    </NavLink>
+    <MudButton Href="/employer" Color="Color.Inherit" Class="@LayoutService?.GetActiveLinkClass("employer")" Variant="Variant.Text">Employer</MudButton>
+    <MudButton Href="/application-form" Color="Color.Inherit" Class="@LayoutService?.GetActiveLinkClass("application-form")" Variant="Variant.Text">Application Form</MudButton>
+    <MudButton Href="/applicants" Color="Color.Inherit" Class="@LayoutService?.GetActiveLinkClass("applicants")" Variant="Variant.Text">Applicants</MudButton>
+</MudHidden>

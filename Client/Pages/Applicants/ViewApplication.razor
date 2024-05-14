@@ -1,0 +1,108 @@
+﻿@layout AppLayout
+@page "/applicant/{id:guid}"
+@using Client.Pages.QuestionAnswers
+@using Shared.Enums
+@using Shared.Models.Applicant
+@using Client.Interfaces.Questions
+@using Client.Interfaces.Applicant
+@using Shared.Models.Questions
+@inject IQuestionService QuestionService
+@inject IApplicantService ApplicantService
+@inject IDialogService Dialog
+@inject NavigationManager nav
+
+@if (AppState.IsBusy)
+{
+    <DataGridSkeleton/>
+}
+else
+{
+    <MudStack AlignItems="AlignItems.Start" Justify="Justify.FlexStart" Class="pb-2">
+        <MudFab DisableElevation Size="Size.Medium" Style="width:150px;" Label="Back" OnClick="@(() => nav.NavigateTo("applicants"))" Color="Color.Dark" />
+    </MudStack>
+    <div class="center-container">
+        <MudPaper Class="mud-theme-primary" Width="500px" Height="50px;" Elevation="10" Outlined>
+         <MudText Color="Color.Inherit" Align="Align.Center" Typo="Typo.h6">Personal Information</MudText>
+     </MudPaper>
+        <MudGrid Spacing="2">
+             <MudItem xs="12" sm="6">
+                 <MudTextField @bind-Value="Applicant!.FirstName" Label="First Name" Variant="Variant.Outlined" For="() => Applicant!.FirstName" />
+             </MudItem>
+             <MudItem xs="12" sm="6">
+                 <MudTextField @bind-Value="Applicant!.LastName" Label="Last Name" Variant="Variant.Outlined" For="() => Applicant!.LastName" />
+             </MudItem>
+             <MudItem xs="12">
+                 <MudTextField @bind-Value="Applicant!.Email" Label="Email" Variant="Variant.Outlined" For="() => Applicant!.Email" />
+             </MudItem>
+             <MudItem xs="12">
+                 <MudTextField @bind-Value="Applicant!.PhoneNo" Label="PhoneNo" Variant="Variant.Outlined" For="() => Applicant!.PhoneNo" />
+             </MudItem>
+             <MudItem xs="12">
+                 <MudTextField @bind-Value="Applicant!.Nationality" Label="Nationality" Variant="Variant.Outlined" For="() => Applicant!.Nationality" />
+             </MudItem>
+             <MudItem xs="12">
+                 <MudTextField @bind-Value="Applicant!.CurrentResidence" Label="Current Residence" Variant="Variant.Outlined" For="() => Applicant!.CurrentResidence" />
+             </MudItem>
+             <MudItem xs="12">
+                 <MudTextField @bind-Value="Applicant!.IdNumber" Label="IdNumber" Variant="Variant.Outlined" For="() => Applicant!.IdNumber" />
+             </MudItem>
+             <MudItem xs="12">                 
+                 <MudDatePicker PickerVariant="PickerVariant.Dialog" DateFormat="dd/MM/yyyy" @bind-Date="Applicant!.Dob" Label="Date of Birth" Variant="Variant.Outlined" For="() => Applicant!.Dob" />
+             </MudItem>
+             <MudItem xs="12">
+                 <MudSelect T="Gender" @bind-Value="Applicant!.Gender" AnchorOrigin="Origin.BottomCenter" Dense Variant="Variant.Outlined">
+                         @foreach (Gender item in Enum.GetValues<Gender>())
+                        {
+                            <MudSelectItem Value="@item">@item</MudSelectItem>
+                        }
+                </MudSelect>
+                </MudItem>
+                <MudItem xs="12">
+                    <MudPaper Class="mud-theme-primary" Width="500px" Height="50px;" Elevation="10" Outlined>
+                     <MudText Color="Color.Inherit" Align="Align.Center" Typo="Typo.h6">Additional Questions</MudText>
+                 </MudPaper>
+             </MudItem>
+             <MudItem xs="12">
+                 @foreach (var item in Applicant!.ParagraphQuestionAnswers!)
+                    {
+                        <ParagraphQuestionAns Data="item" IsReadOnly="true" />
+                    }
+                    @foreach (var item in Applicant!.DateQuestionAnswers!)
+                    {
+                        <DateQuestionAns Data="item" IsReadOnly="true" />
+                    }
+                    @foreach (var item in Applicant!.DropdownQuestionAnswers!)
+                    {
+                        <DropdownQuestionAns Data="@item" IsReadOnly="true" />
+                    }
+                    @foreach (var item in Applicant!.MultichoiceQuestionAnswers!)
+                    {
+                        <MultiChoiceQuestionAns Data="@item" IsReadOnly="true" />
+                    }
+                    @foreach (var item in Applicant!.YesNoQuestionAnswers!)
+                    {
+                        <YesNoQuestionAns Data="@item"  IsReadOnly="true"/>
+                    }
+                    @foreach (var item in Applicant!.NumberQuestionAnswers!)
+                    {
+                        <NumberQuestionAns Data="@item" IsReadOnly="true" />
+                    }
+             </MudItem>             
+         </MudGrid>
+
+ </div>
+}
+
+
+@code {
+    private ApplicantInfo? Applicant = new();
+    [Parameter] public Guid id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        AppState.IsBusy = true;
+        Applicant = await ApplicantService.GetApplicant(id);
+        AppState.IsBusy = false;
+    }
+}
+

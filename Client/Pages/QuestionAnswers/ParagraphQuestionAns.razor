@@ -1,0 +1,7 @@
+﻿<MudText Color="Color.Inherit" Typo="Typo.h6">@Data!.Title</MudText>
+<MudTextField Lines="5" @bind-Value="Data!.Text" ReadOnly="IsReadOnly" Variant="Variant.Outlined" Required Placeholder="Please type your answer here" For="() => Data!.Text"/>
+
+ @code {
+    [Parameter] public ParagraphQuestionAnswer Data { get; set; } = new();
+    [Parameter] public bool IsReadOnly { get; set; } = false;
+}

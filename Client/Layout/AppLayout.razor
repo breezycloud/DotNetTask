@@ -1,0 +1,13 @@
+﻿@inherits LayoutComponentBase
+@layout MainLayout
+
+<MudLayout Class="mudblazor-landingpage">
+    <MudAppBar Class="landing-appbar" Elevation="0">
+        <AppBar />
+    </MudAppBar>
+    <MudMainContent Class="pa-5">
+        <LandingSection SectionClass="top-section" BackgroundClass="sweet">            
+            @Body             
+        </LandingSection>        
+    </MudMainContent>
+</MudLayout>

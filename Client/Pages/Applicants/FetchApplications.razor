@@ -1,0 +1,98 @@
+﻿@layout AppLayout
+@page "/applicants"
+@using Client.Interfaces.Applicant
+@using Shared.Models.Applicant
+@inject IApplicantService ApplicantService
+@inject NavigationManager nav
+
+@if (AppState.IsBusy)
+{
+    <DataGridSkeleton/>
+}
+else
+{
+    <MudDataGrid T="ApplicantInfo"
+                 Items="Applicants!.OrderByDescending(x => x.DateModified)"
+                 RowClick="@HandleSelectedDataItemChanged"
+                  Dense
+                  Outlined
+                  QuickFilter="@_quickFilter">
+         <ToolBarContent>
+             <MudText Typo="Typo.h6">Applicants</MudText>
+             <MudSpacer />
+             <MudTextField @bind-Value="AppState.SearchString" Placeholder="Search" Adornment="Adornment.Start" Immediate="true"
+                           AdornmentIcon="@Icons.Material.Filled.Search" IconSize="Size.Medium" Class="mt-0"></MudTextField>
+         </ToolBarContent>
+         <Columns>
+             <PropertyColumn Property="x => x.ToString()" Title="Name" />
+             <PropertyColumn Property="x => x.Gender" />
+             <PropertyColumn Property="x => x.Email" />
+             <PropertyColumn Property="x => x.DateCreated" Title="Date Created" />
+             <TemplateColumn>
+                 <CellTemplate>
+                     <MudButton StartIcon="@Icons.Material.Filled.Search" Color="Color.Primary"
+                                OnClick="() => OnExpand(context.Item.Id)" Size="Size.Small">
+                         View
+                     </MudButton>
+                     <MudButton StartIcon="@Icons.Material.Filled.Delete" Color="Color.Error" OnClick="() => Delete(context.Item.Id)" Size="Size.Small">Delete</MudButton>
+                 </CellTemplate>
+             </TemplateColumn>
+         </Columns>
+         <NoRecordsContent>
+             <MudText Typo="Typo.h6">No records found</MudText>
+         </NoRecordsContent>
+         <PagerContent>
+             <MudDataGridPager T="ApplicantInfo" />
+         </PagerContent>
+     </MudDataGrid>
+
+}
+@code {
+
+    private ApplicantInfo[]? Applicants = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        AppState.IsBusy = true;
+        Applicants = await ApplicantService.GetApplicants();
+        AppState.IsBusy = false;
+    }
+
+    void HandleSelectedDataItemChanged(DataGridRowClickEventArgs<ApplicantInfo> item)
+    {
+        OnExpand(item.Item.Id);
+    }    
+
+    void OnExpand(Guid id)
+    {
+        nav.NavigateTo($"applicant/{id}");
+    }
+
+    async Task Delete(Guid id)
+    {
+        AppState.IsProcessing = true;
+        // var report = await OrderService.GetReportData(id);
+        // await OrderService.GetReceipt(report);
+        await Task.Delay(100);
+        AppState.IsProcessing = false;
+    }
+
+    private Func<ApplicantInfo, bool> _quickFilter => x =>
+    {
+        if (string.IsNullOrWhiteSpace(AppState.SearchString))
+            return true;
+
+        if (x.ToString().Contains(AppState.SearchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+
+        if (x.Gender.ToString().Contains(AppState.SearchString, StringComparison.OrdinalIgnoreCase))
+            return true;
+            
+        if (x.Nationality!.Contains(AppState.SearchString, StringComparison.OrdinalIgnoreCase))
+            return true;        
+
+        return false;
+    };
+
+
+}

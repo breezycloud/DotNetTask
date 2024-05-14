@@ -1,0 +1,12 @@
+﻿<MudText Color="Color.Inherit" Typo="Typo.h6">@Data!.Title</MudText>
+
+<MudRadioGroup @bind-Value="Data!.YesNo">
+    <MudRadio Disabled="IsReadOnly" Value="@(true)">Yes</MudRadio>
+        <MudRadio Disabled="IsReadOnly" Value="@(false)">No</MudRadio>
+</MudRadioGroup>
+
+
+ @code {
+    [Parameter] public YesNoQuestionAnswer Data { get; set; } = new();
+    [Parameter] public bool IsReadOnly { get; set; } = false;
+}

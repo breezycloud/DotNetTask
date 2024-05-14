@@ -1,0 +1,263 @@
+﻿@layout AppLayout
+@page "/application-form"
+@using Client.Pages.QuestionAnswers
+@using Shared.Enums
+@using Shared.Models.Applicant
+@using Client.Interfaces.Questions
+@using Client.Interfaces.Applicant
+@using Shared.Models.Questions
+@inject IQuestionService QuestionService
+@inject IApplicantService ApplicantService
+@inject IDialogService Dialog
+
+
+
+@if (AppState.IsBusy)
+{
+    <DataGridSkeleton/>
+}
+else
+{
+    <div class="center-container">
+        <MudPaper Class="mud-theme-primary" Width="500px" Height="50px;" Elevation="10" Outlined>
+         <MudText Color="Color.Inherit" Align="Align.Center" Typo="Typo.h6">Personal Information</MudText>
+     </MudPaper>
+     <EditForm Model="Applicant" OnValidSubmit="Save">
+         <DataAnnotationsValidator />
+         <MudGrid Spacing="2">
+             <MudItem xs="12" sm="6">
+                 <MudTextField @bind-Value="Applicant.FirstName" Label="First Name" Variant="Variant.Outlined" For="() => Applicant.FirstName" />
+             </MudItem>
+             <MudItem xs="12" sm="6">
+                 <MudTextField @bind-Value="Applicant.LastName" Label="Last Name" Variant="Variant.Outlined" For="() => Applicant.LastName" />
+             </MudItem>
+             <MudItem xs="12">
+                 <MudTextField @bind-Value="Applicant.Email" Label="Email" Variant="Variant.Outlined" For="() => Applicant.Email" />
+             </MudItem>
+             <MudItem xs="12">
+                 <MudTextField @bind-Value="Applicant.PhoneNo" Label="PhoneNo" Variant="Variant.Outlined" For="() => Applicant.PhoneNo" />
+             </MudItem>
+             <MudItem xs="12">
+                 <MudTextField @bind-Value="Applicant.Nationality" Label="Nationality" Variant="Variant.Outlined" For="() => Applicant.Nationality" />
+             </MudItem>
+             <MudItem xs="12">
+                 <MudTextField @bind-Value="Applicant.CurrentResidence" Label="Current Residence" Variant="Variant.Outlined" For="() => Applicant.CurrentResidence" />
+             </MudItem>
+             <MudItem xs="12">
+                 <MudTextField @bind-Value="Applicant.IdNumber" Label="IdNumber" Variant="Variant.Outlined" For="() => Applicant.IdNumber" />
+             </MudItem>
+             <MudItem xs="12">                 
+                 <MudDatePicker PickerVariant="PickerVariant.Dialog" DateFormat="dd/MM/yyyy" @bind-Date="Applicant.Dob" Label="Date of Birth" Variant="Variant.Outlined" For="() => Applicant.Dob" />
+             </MudItem>
+             <MudItem xs="12">
+                 <MudSelect T="Gender" @bind-Value="Applicant!.Gender" AnchorOrigin="Origin.BottomCenter" Dense Variant="Variant.Outlined">
+                         @foreach (Gender item in Enum.GetValues<Gender>())
+                        {
+                            <MudSelectItem Value="@item">@item</MudSelectItem>
+                        }
+                </MudSelect>
+                </MudItem>
+                <br />
+                <br />
+                <br />
+                <MudItem xs="12">
+                    <MudPaper Class="mud-theme-primary" Width="500px" Height="50px;" Elevation="10" Outlined>
+                     <MudText Color="Color.Inherit" Align="Align.Center" Typo="Typo.h6">Additional Questions</MudText>
+                 </MudPaper>
+             </MudItem>
+             <MudItem xs="12">
+                 @foreach (var item in Applicant.ParagraphQuestionAnswers!)
+                    {
+                        <ParagraphQuestionAns Data="item" />
+                    }
+                    @foreach (var item in Applicant.DateQuestionAnswers!)
+                    {
+                        <DateQuestionAns Data="item" />
+                    }
+                    @foreach (var item in Applicant.DropdownQuestionAnswers!)
+                    {
+                        <DropdownQuestionAns Data="@item" />
+                    }
+                    @foreach (var item in Applicant.MultichoiceQuestionAnswers!)
+                    {
+                        <MultiChoiceQuestionAns Data="@item" />
+                    }
+                    @foreach (var item in Applicant.YesNoQuestionAnswers!)
+                    {
+                        <YesNoQuestionAns Data="@item" />
+                    }
+                    @foreach (var item in Applicant.NumberQuestionAnswers!)
+                    {
+                        <NumberQuestionAns Data="@item" />
+                    }
+             </MudItem>
+             <MudItem xs="12" Class="d-flex align-center justify-center">
+                <MudFab DisableElevation Size="Size.Medium" Label="@(AppState.IsProcessing ? "Processing" : "Submit Application")" ButtonType="ButtonType.Submit" Color="Color.Primary" />
+             </MudItem>
+         </MudGrid>
+     </EditForm>
+ </div>
+}
+
+
+@code {
+    private ApplicantInfo Applicant = new();
+    private Question[]? Questions = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        await GetQuestions();        
+
+    }
+
+    async Task GetQuestions()
+    {
+        AppState.IsBusy = true;
+        Questions = await QuestionService.GetQuestions();
+        await AddQuestions();
+        AppState.IsBusy = false;
+        StateHasChanged();
+    }
+
+    async Task AddQuestions()
+    {
+        foreach (var item in Questions!.Where(x => !string.IsNullOrEmpty(x.Title)))
+        {
+            switch (item.Type)
+            {
+                case QuestionType.Paragraph:
+                    var pq = await QuestionService.GetParagraphQuestion(item.Id);
+                    if (pq is not null)
+                    {
+                        ParagraphQuestionAnswer paragraphQuestion = new()
+                        {
+                            Id = pq.Id,
+                            Title = pq.Title,
+                            Type = pq.Type,
+                            DateCreated = pq.DateCreated,
+                            DateModified = pq.DateModified
+                        };
+                        Applicant!.ParagraphQuestionAnswers!.Add(paragraphQuestion);
+                    }
+                    break;
+                case QuestionType.YesNo:
+                    var yesno = await QuestionService.GetYesNoQuestion(item.Id);
+                    if (yesno is not null)
+                    {
+                        YesNoQuestionAnswer yesNoQuestion = new()
+                        {
+                                Id = yesno.Id,
+                                Title = yesno.Title,
+                                Type = yesno.Type,
+                                DateCreated = yesno.DateCreated,
+                                DateModified = yesno.DateModified
+                        };
+                        Applicant!.YesNoQuestionAnswers!.Add(yesNoQuestion);
+                    }
+                    break;
+                case QuestionType.Dropdown:
+                    var dropdown = await QuestionService.GetDropdownQuestion(item.Id);
+                    if (dropdown is not null)
+                    {
+                        DropdownQuestionAnswer dropdownQuestion = new()
+                        {
+                            Id = dropdown.Id,
+                            Title = dropdown.Title,
+                            Type = dropdown.Type,
+                            Choices = dropdown.Choices,
+                            DateCreated = dropdown.DateCreated,
+                            DateModified = dropdown.DateModified
+                        };
+                        Applicant!.DropdownQuestionAnswers!.Add(dropdownQuestion);
+                    }
+                    break;
+                case QuestionType.MultipleChoice:
+                    var multichoice = await QuestionService.GetMultichoiceQuestion(item.Id);
+                    if (multichoice is not null)
+                    {
+                        MultichoiceQuestionAnswer multichoiceQuestion = new()
+                        {
+                                Id = multichoice.Id,
+                                Title = multichoice.Title,
+                                Type = multichoice.Type,
+                                Choices = multichoice.Choices,
+                                Max = multichoice.Max,
+                                DateCreated = multichoice.DateCreated,
+                                DateModified = multichoice.DateModified
+                        };
+                        Applicant!.MultichoiceQuestionAnswers!.Add(multichoiceQuestion);
+                    }
+                    break;
+                case QuestionType.Number:
+                    var numberQuestion = await QuestionService.GetNumberQuestion(item.Id);
+                    if (numberQuestion is not null)
+                    {
+                        NumberQuestionAnswer numberQuestionAnswer = new()
+                        {
+                            Id = numberQuestion.Id,
+                            Title = numberQuestion.Title,
+                            Type = numberQuestion.Type,
+                            DateCreated = numberQuestion.DateCreated,
+                            DateModified = numberQuestion.DateModified
+                        };
+                        Applicant!.NumberQuestionAnswers!.Add(numberQuestionAnswer);
+                    }
+                    break;
+
+                case QuestionType.Date:
+                    var dateQuestion = await QuestionService.GetDateQuestion(item.Id);
+                    if (dateQuestion is not null)
+                    {
+                        DateQuestionAnswer dateQuestionAnswer = new()
+                        {
+                            Id = dateQuestion.Id,
+                            Title = dateQuestion.Title,
+                            Type = dateQuestion.Type,
+                            DateCreated = dateQuestion.DateCreated,
+                            DateModified = dateQuestion.DateModified
+                        };
+                        Applicant!.DateQuestionAnswers!.Add(dateQuestionAnswer);
+                    }
+                    break;
+            };
+        }
+    }
+
+
+    private async Task Save()
+    {
+        AppState.IsProcessing = true;
+        var prompt = await Dialog.ShowMessageBox("Confirmation", "Do you really wish to submit", yesText:"Yes", cancelText:"No");
+        if (prompt is null)
+        {
+            AppState.IsProcessing = false;
+            return;
+        }
+
+        try
+        {
+            Applicant.DateCreated = DateTime.UtcNow;
+            Applicant.DateModified = Applicant.DateCreated;
+            bool result = await ApplicantService.AddApplicant(Applicant);
+            if (result)
+            {
+                SnackBar.Add("Application Successfully Submitted", Severity.Success);
+                Applicant = new();
+                await GetQuestions();
+            }
+            else
+            {
+                SnackBar.Add("Failed to submit", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            SnackBar.Add("Failed to submit", Severity.Error);
+        }
+        finally
+        {
+            AppState.IsProcessing = false;
+        }
+    }
+}
+

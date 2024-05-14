@@ -1,0 +1,7 @@
+﻿<MudText Color="Color.Inherit" Typo="Typo.h6">@Data!.Title</MudText>
+<MudNumericField ReadOnly @bind-Value="Data!.Number" For="() => Data!.Number" Variant="Variant.Outlined"/>
+
+@code {
+    [Parameter] public NumberQuestionAnswer Data { get; set; } = new();
+    [Parameter] public bool IsReadOnly { get; set; } = false;
+}

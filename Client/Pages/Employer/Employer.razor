@@ -1,0 +1,156 @@
+﻿@layout AppLayout
+@page "/employer"
+@using Client.Interfaces.Questions
+@using Client.Pages.Questions
+@using Shared.Enums
+@using Shared.Models.Questions
+@inject IQuestionService QuestionService
+@inject IDialogService Dialog
+
+@implements IDisposable
+
+@if (AppState.IsBusy)
+{
+    <DataGridSkeleton/>
+}
+else
+{
+    <MudStack AlignItems="AlignItems.Start" Justify="Justify.FlexStart">
+        <MudButton Size="Size.Medium" OnClick="AddQuestion">Add question</MudButton>
+    </MudStack>
+    <div class="center-container">        
+        <MudStack Row AlignItems="AlignItems.Start" Justify="Justify.SpaceBetween">
+            <MudStack AlignItems="AlignItems.Start" Justify="Justify.SpaceBetween">
+                 <MudPaper Class="mud-theme-primary" Width="500px" Height="50px;" Elevation="10" Outlined>
+                     <MudText Color="Color.Inherit" Align="Align.Center" Typo="Typo.h6">Add Custom Questions</MudText>
+                </MudPaper>
+             @foreach (var item in Questions!.Where(x => !string.IsNullOrEmpty(x.Title)))
+                {
+                    <MudText Color="Color.Default" Typo="Typo.caption">@item.Type</MudText>
+                    <MudStack Row AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+                         <MudIconButton Disabled="AppState.IsProcessing" Icon="@Icons.Material.Rounded.Delete" Size="Size.Small" Color="Color.Error" OnClick="() => Delete(item)" />
+                         <MudText Color="Color.Default" Typo="Typo.body1">@item.Title</MudText>
+                            <MudIconButton Disabled="AppState.IsProcessing" Icon="@Icons.Material.Rounded.Edit" Size="Size.Small" Color="Color.Default" OnClick="() => Edit(item)" />
+                        </MudStack>
+                    <MudDivider DividerType="DividerType.FullWidth" />
+                }
+            </MudStack>
+
+        </MudStack>
+
+    </div>
+}
+
+
+@code {
+    private Question[]? Questions = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        AppState.UpdateQuestionsHandler += UpdateQuestions!;        
+        await GetQuestions();        
+    }
+
+    async Task GetQuestions()
+    {
+        AppState.IsBusy = true;
+        Questions = await QuestionService.GetQuestions();
+        AppState.IsBusy = false;
+        StateHasChanged();
+    }
+
+    void UpdateQuestions(object sender, EventArgs args)
+    {
+        InvokeAsync(() =>
+        {
+            GetQuestions();
+        });
+    }
+
+    private void AddQuestion()
+    {
+        Dialog.Show<QuestionEntry>("");
+    }
+
+    async void Delete(Question question)
+    {
+        AppState.IsProcessing = true;
+        var prompt = await Dialog.ShowMessageBox("Confirmation", "Do you really wish to delete", yesText: "Yes", cancelText: "No");
+        if (prompt is null)
+        {
+            AppState.IsProcessing = false;
+            StateHasChanged();
+            return;
+        }
+        try
+        {
+            bool result = await QuestionService.DeleteQuestion(question.Id);
+            if (result)
+            {
+                SnackBar.Add("Question Successfully Deleted", Severity.Success);                
+            }
+            else
+            {
+                SnackBar.Add("failed to delete question", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            SnackBar.Add("failed to delete question", Severity.Error);
+        }
+        AppState.IsProcessing = false;
+        AppState.UpdateQuestions();
+
+    }
+
+    void Edit(Question question)
+    {
+        _ = GetQuestion(question);        
+    }
+
+    async Task GetQuestion(Question question)
+    {
+        AppState.IsProcessing = true;
+        DialogParameters parameters = new();
+        parameters.Add("Type", question.Type);
+        if (question.Type == QuestionType.Paragraph)
+        {            
+            var response = await QuestionService.GetParagraphQuestion(question.Id);            
+            parameters.Add("ParagraphQuestion", response);
+        }
+        if (question.Type == QuestionType.YesNo)
+        {
+            var response = await QuestionService.GetYesNoQuestion(question.Id);
+            parameters.Add("YesNoQuestion", response);
+        }        
+        if (question.Type == QuestionType.Dropdown)
+        {            
+            var response = await QuestionService.GetDropdownQuestion(question.Id);
+            parameters.Add("DropdownQuestion", response);                        
+        }
+        if (question.Type == QuestionType.MultipleChoice)
+        {            
+            var response = await QuestionService.GetMultichoiceQuestion(question.Id);
+            parameters.Add("MultichoiceQuestion", response);            
+        }
+        if (question.Type == QuestionType.Date)
+        {
+            var response = await QuestionService.GetDateQuestion(question.Id);
+            parameters.Add("DateQuestion", response);
+        }        
+        if (question.Type == QuestionType.Number)
+        {
+            var response = await QuestionService.GetNumberQuestion(question.Id);
+            parameters.Add("NumberQuestion", response);
+        }  
+        AppState.IsProcessing = false;
+        Dialog.Show<QuestionEntry>("", parameters);
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        AppState.UpdateQuestionsHandler -= UpdateQuestions!;
+    }
+}
+

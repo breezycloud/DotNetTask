@@ -1,0 +1,260 @@
+﻿@using Shared.Enums
+@using Client.Interfaces.Questions
+@using Shared.Models.Questions
+@inject IQuestionService QuestionService
+
+@implements IDisposable
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">Select Question Type</MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudSelect T="QuestionType" Value="Type" ValueChanged="TypeChanged" AnchorOrigin="Origin.BottomCenter" Dense Variant="Variant.Outlined">
+            @foreach (QuestionType type in Enum.GetValues<QuestionType>())
+            {
+                <MudSelectItem Value="@type">@type</MudSelectItem>
+            }
+        </MudSelect>
+        @if (Type == QuestionType.Paragraph)
+        {
+            <MudTextField Variant="Variant.Outlined" @bind-Value="ParagraphQuestion!.Title" Label="Question" Placeholder="Type here"></MudTextField>
+        }
+        else if (Type == QuestionType.YesNo)
+        {
+            <MudTextField Variant="Variant.Outlined" @bind-Value="YesNoQuestion!.Title" Label="Question" Placeholder="Type here"></MudTextField>
+        }
+        else if (Type == QuestionType.Dropdown)
+        {
+            <MudTextField Variant="Variant.Outlined" @bind-Value="DropdownQuestion!.Title" Label="Question" Placeholder="Type here"></MudTextField>
+            <MudTextField @bind-Value="Choice" OnKeyUp="KeyUp" Variant="Variant.Outlined" Label="Choice"/>
+            <ListChoice Choices="Choices" />
+        }
+        else if (Type == QuestionType.MultipleChoice)
+        {
+            <MudTextField Variant="Variant.Outlined" @bind-Value="MultichoiceQuestion!.Title" Label="Question" Placeholder="Type here"></MudTextField>
+            <MudTextField @bind-Value="Choice" OnKeyUp="KeyUp" Variant="Variant.Outlined" Label="Choice"/>
+            <ListChoice Choices="Choices" />
+            <MudTextField Variant="Variant.Outlined" @bind-Value="MultichoiceQuestion!.Max" Label="Max choice allowed"
+            Placeholder="Enter number of choice allowed here"></MudTextField>
+        }
+        else if (Type == QuestionType.Date)
+        {
+            <MudTextField Variant="Variant.Outlined" @bind-Value="DateQuestion!.Title" Label="Question" Placeholder="Type here"></MudTextField>
+        }
+        else
+        {
+            <MudTextField Variant="Variant.Outlined" @bind-Value="NumberQuestion!.Title" Label="Question" Placeholder="Type here"></MudTextField>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Close">Close</MudButton>
+        <MudButton Disabled="AppState.IsProcessing" OnClick="() => Save()" Variant="Variant.Filled"
+                   Color="Color.Primary">@(AppState.IsProcessing ? "Processing" : "Save")</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+
+    [CascadingParameter]
+    public MudDialogInstance? DialogInstance { get; set; }
+
+    [Parameter] public QuestionType Type { get; set; } = QuestionType.Paragraph;
+    [Parameter] public ParagraphQuestion? ParagraphQuestion { get; set; } = new();
+    [Parameter] public YesNoQuestion? YesNoQuestion { get; set; } = new();
+    [Parameter] public DropdownQuestion? DropdownQuestion { get; set; } = new();
+    [Parameter] public DateQuestion? DateQuestion { get; set; } = new();
+    [Parameter] public NumberQuestion? NumberQuestion { get; set; } = new();
+    [Parameter] public MultichoiceQuestion? MultichoiceQuestion { get; set; } = new();
+
+    [Parameter] public bool IsEdit { get; set; } = false;
+
+    private string? Choice { get; set; }
+    private string? OldChoice { get; set; }
+    private List<string> Choices { get; set; } = [];
+
+
+
+    protected override void OnInitialized()
+    {
+        AppState.ChoiceHandler += UpdateChoice!;
+        AppState.ChoicesHandler += UpdateChoices!;
+        if (Type == QuestionType.Dropdown)
+        {
+            Choices = DropdownQuestion!.Choices!.Any() ? DropdownQuestion.Choices : new List<string>();
+        }
+        if (Type == QuestionType.MultipleChoice)
+        {
+            Choices = MultichoiceQuestion!.Choices!.Any() ? MultichoiceQuestion!.Choices : new List<string>();
+        }
+        base.OnInitialized();
+    }
+
+    void Close() => DialogInstance?.Close(DialogResult.Ok(true));
+
+    void TypeChanged(QuestionType type)
+    {
+        Type = type;
+        StateHasChanged();
+    }
+
+    void KeyUp(KeyboardEventArgs args)
+    {
+        if (args.Key == "Enter")
+        {
+            if (string.IsNullOrEmpty(Choice))
+            {
+                SnackBar.Add("Enter choice to proceed", Severity.Error);
+                return;
+            }
+            if(string.IsNullOrEmpty(OldChoice))
+            {
+                Choices.Remove(OldChoice!);
+            }
+            Choices.Add(Choice);
+            Choice = string.Empty;
+            StateHasChanged();
+        }
+    }
+
+    void UpdateChoices(object sender, List<string> choices)
+    {
+        Choices = choices;
+        StateHasChanged();
+    }
+
+    void UpdateChoice(object sender, string choice)
+    {
+        OldChoice = choice;
+        Choice = choice;
+        StateHasChanged();
+    }
+
+
+    async Task Save()
+    {
+        AppState.IsProcessing = true;
+        try
+        {
+            if (Type == QuestionType.Paragraph && string.IsNullOrEmpty(ParagraphQuestion.Title))
+            {
+                SnackBar.Add("Please title cannot be empty", Severity.Warning);
+                AppState.IsProcessing = false;
+                return;
+            }
+            else
+            {
+                ParagraphQuestion!.Type = Type;
+                ParagraphQuestion!.DateCreated = DateTime.UtcNow;
+                ParagraphQuestion!.DateModified = DateTime.UtcNow;
+                await QuestionService.AddOrEdiParagraphQuestion(ParagraphQuestion);
+            }
+            if (Type == QuestionType.YesNo && string.IsNullOrEmpty(YesNoQuestion!.Title))
+            {
+                SnackBar.Add("Please title cannot be empty", Severity.Warning);
+                AppState.IsProcessing = false;
+                return;
+            }
+            else
+            {
+                YesNoQuestion!.Type = Type;
+                YesNoQuestion!.DateCreated = DateTime.UtcNow;
+                YesNoQuestion!.DateModified = DateTime.UtcNow;
+                await QuestionService.AddOrEditYesNoQuestion(YesNoQuestion);
+            }
+            if (Type == QuestionType.Dropdown)
+            {
+                if (string.IsNullOrEmpty(DropdownQuestion!.Title))
+                {
+                    SnackBar.Add("Please title cannot be empty", Severity.Warning);
+                    AppState.IsProcessing = false;
+                    return;
+                }
+                if (!Choices.Any())
+                {
+                    SnackBar.Add("Choices cannot be empty", Severity.Warning);
+                    AppState.IsProcessing = false;
+                    return;
+                }
+                else
+                {
+                    DropdownQuestion!.Choices = Choices;
+                }
+                DropdownQuestion!.Type = Type;
+                DropdownQuestion!.DateCreated = DateTime.UtcNow;
+                DropdownQuestion!.DateModified = DateTime.UtcNow;
+                await QuestionService.AddOrEditDropdownQuestion(DropdownQuestion);
+            }
+            if (Type == QuestionType.MultipleChoice)
+            {
+                if (string.IsNullOrEmpty(MultichoiceQuestion!.Title))
+                {
+                    SnackBar.Add("Please title cannot be empty", Severity.Warning);
+                    AppState.IsProcessing = false;
+                    return;
+                }
+                if (!Choices!.Any())
+                {
+                    SnackBar.Add("Choices cannot be empty", Severity.Warning);
+                    AppState.IsProcessing = false;
+                    return;
+                }
+                else
+                {
+                    MultichoiceQuestion!.Choices = Choices;
+                }
+                MultichoiceQuestion!.Type = Type;
+                MultichoiceQuestion!.DateCreated = DateTime.UtcNow;
+                MultichoiceQuestion!.DateModified = DateTime.UtcNow;
+                await QuestionService.AddOrEditMultichoicQuestion(MultichoiceQuestion);
+            }
+            if (Type == QuestionType.Date && string.IsNullOrEmpty(DateQuestion!.Title))
+            {
+                SnackBar.Add("Please title cannot be empty", Severity.Warning);
+                AppState.IsProcessing = false;
+                return;
+            }
+            else
+            {
+                DateQuestion!.Type = Type;
+                DateQuestion!.DateCreated = DateTime.UtcNow;
+                DateQuestion!.DateModified = DateTime.UtcNow;
+                await QuestionService.AddOrEditDateQuestion(DateQuestion);
+            }
+            if (Type == QuestionType.Number && string.IsNullOrEmpty(NumberQuestion!.Title))
+            {
+                SnackBar.Add("Please title cannot be empty", Severity.Warning);
+                AppState.IsProcessing = false;
+                return;
+            }
+            else
+            {
+                NumberQuestion!.Type = Type;
+                NumberQuestion!.DateCreated = DateTime.UtcNow;
+                NumberQuestion!.DateModified = DateTime.UtcNow;
+                await QuestionService.AddOrEditNumberQuestion(NumberQuestion);
+            }
+
+            AppState.UpdateQuestions();
+            StateHasChanged();
+            Close();
+        }
+        catch (Exception ex)
+        {
+            SnackBar.Add("Error occurred while saving question", Severity.Error);
+        }
+        finally
+        {
+            AppState.IsProcessing = false;
+        }
+    }
+
+
+    public void Dispose()
+    {
+        AppState.ChoiceHandler -= UpdateChoice!;
+        AppState.ChoicesHandler -= UpdateChoices!;
+    }
+
+   
+}
